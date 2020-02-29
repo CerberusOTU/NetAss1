@@ -53,8 +53,13 @@ int main() {
 	//Initialize winsock
 	WSADATA wsa;
 
-	std::thread send(sending);
-	std::thread receive(receiving);
+	//Get IP address
+	std::string getIpAddress;
+	std::cout << "Enter IP Adress>> ";
+	std::getline(std::cin, getIpAddress);
+	const char* ipAddress = getIpAddress.c_str();
+
+
 
 	int error;
 	error = WSAStartup(MAKEWORD(2, 2), &wsa);
@@ -73,13 +78,13 @@ int main() {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	if (getaddrinfo("localhost", "5000", &hints, &ptr) != 0) {
+
+
+	if (getaddrinfo(ipAddress, "5000", &hints, &ptr) != 0) {
 		printf("Getaddrinfo failed!! %d\n", WSAGetLastError());
 		WSACleanup();
 		return 1;
 	}
-
-
 
 	cli_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -88,6 +93,8 @@ int main() {
 		WSACleanup();
 		return 1;
 	}
+
+
 
 	//Connect to the server
 	if (connect(cli_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR) {
@@ -109,6 +116,8 @@ int main() {
 	u_long mode = 1; // 0 for blocking mode
 	ioctlsocket(cli_socket, FIONBIO, &mode);
 
+	std::thread send(sending);
+	std::thread receive(receiving);
 
 	receive.detach();
 	send.join();

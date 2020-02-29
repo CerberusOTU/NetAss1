@@ -113,7 +113,7 @@ int main() {
 				for (int j = 0; j < master_sockets.fd_count; j++)
 				{
 					out_socket = master_sockets.fd_array[j];
-					if (out_socket != server_socket && out_socket != _socket)
+					if (out_socket != server_socket && out_socket != _socket && out_socket != client_socket)
 					{
 						std::ostringstream msgOUT;
 						msgOUT << "User " << client_socket << ": --ONLINE--" << buf << "\r\n";
