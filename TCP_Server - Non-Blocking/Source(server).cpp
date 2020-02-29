@@ -25,6 +25,32 @@ struct Client {
 };
 
 std::vector<Client> clients;
+
+void DisplayOnline(SOCKET _sock)
+{
+	std::string string_Out;
+	for (int index = 0; index < clients.size(); index++)
+	{
+		if (clients[index].sock != _sock) {	
+			if (clients[index].name != "User")
+			{
+				string_Out += clients[index].name + ">> ONLINE :: Room " + std::to_string(clients[index].room) + "\r\n";
+			}
+			else
+			{
+				std::ostringstream ss;
+				ss << "User: " << clients[index].sock << ">> ONLINE :: Room " << clients[index].room << "\r\n";
+				string_Out += ss.str();
+			}
+		}
+	}
+	for (int index = 0; index < clients.size(); index++)
+	{ 
+		if (clients[index].sock == _sock)
+			send(clients[index].sock, string_Out.c_str(), string_Out.size() + 1, 0);
+	}
+}
+
 int main() {
 
 	//Initialize winsock
@@ -159,37 +185,43 @@ int main() {
 				{
 					std::cout << "CommandRecognized\n";
 					std::string tmp = buf;
-					std::size_t pos = tmp.find(":");					//Find First Break
-					tmp = tmp.substr(1, pos - 1);
-					if (tmp == "join")
+					if (tmp == "/online")
 					{
-						std::cout << "JoinRoomCalled\n";
-						tmp = buf;
-						tmp = tmp.substr(pos + 1);
-						for (int j = 0; j < clients.size(); j++)
+						DisplayOnline(_socket);
+					}
+					else {
+						std::size_t pos = tmp.find(":");					//Find First Break
+						tmp = tmp.substr(1, pos - 1);
+						if (tmp == "join")
 						{
-							if (_socket == clients[j].sock)
+							std::cout << "JoinRoomCalled\n";
+							tmp = buf;
+							tmp = tmp.substr(pos + 1);
+							for (int j = 0; j < clients.size(); j++)
 							{
-								clients[j].room = std::stof(tmp, NULL);
-								std::cout << "Changed room of User: " << clients[j].sock << " to " << "room " << clients[j].room << "\n";
+								if (_socket == clients[j].sock)
+								{
+									clients[j].room = std::stof(tmp, NULL);
+									std::cout << "Changed room of User: " << clients[j].sock << " to " << "room " << clients[j].room << "\n";
+								}
+							}
+						}
+						else if (tmp == "name")
+						{
+							std::cout << "NameChangeCalled\n";
+							tmp = buf;
+							tmp = tmp.substr(pos + 1);
+							for (int j = 0; j < clients.size(); j++)
+							{
+								if (_socket == clients[j].sock)
+								{
+									clients[j].name = tmp;
+									std::cout << "Changed name of User: " << clients[j].sock << " to " << "'" << clients[j].name << "'\n";
+								}
 							}
 						}
 					}
-					else if (tmp == "name")
-					{
-						std::cout << "NameChangeCalled\n";
-						tmp = buf;
-						tmp = tmp.substr(pos + 1);
-						for (int j = 0; j < clients.size(); j++)
-						{
-							if (_socket == clients[j].sock)
-							{
-								clients[j].name = tmp;
-								std::cout << "Changed name of User: " << clients[j].sock << " to " << "'" << clients[j].name << "'\n";
-							}
-						}
-
-					}
+					
 				}
 				else
 				{
