@@ -26,7 +26,11 @@ void sending()
 			send(cli_socket, message, strlen(message), 0);
 			break;
 		}
-		line = line + "\n";
+		else if (line == "/cmd")
+		{
+			std::cout << "Join a Room: /join:(Room#)\n";
+			std::cout << "Change Name: /name:(Name)\n";
+		}
 		char* message = (char*)line.c_str();
 		send(cli_socket, message, strlen(message), 0);
 	}

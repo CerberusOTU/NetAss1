@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 
 
@@ -15,6 +16,15 @@ SOCKET out_socket;
 const unsigned int BUF_LEN = 512;
 char buf[4096];
 
+
+struct Client {
+	Client(SOCKET _sock, std::string _name, int _room) : sock(_sock), name(_name), room(_room) {};
+	SOCKET sock;
+	std::string name;
+	int room;
+};
+
+std::vector<Client> clients;
 int main() {
 
 	//Initialize winsock
@@ -100,7 +110,7 @@ int main() {
 				printf("Client connected!!\n");
 
 				//Send welcome message
-				std::string welcomeMsg = "SERVER>> Welcome to the Cerber(US)!!!\r\n";
+				std::string welcomeMsg = "SERVER>> Welcome to the Cerber(US)!!!\tUse /cmd to see commands\r\n";
 
 				if (send(client_socket, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0) == SOCKET_ERROR) {
 					printf("Failed to send msg to client %d\n", WSAGetLastError());
@@ -110,9 +120,12 @@ int main() {
 					return 1;
 				}
 
-				for (int j = 0; j < master_sockets.fd_count; j++)
+				Client tempClient(client_socket, "User" , 0); //Create struct of joining client
+				clients.push_back(tempClient);
+
+				for (int j = 0; j < clients.size(); j++)
 				{
-					out_socket = master_sockets.fd_array[j];
+					out_socket = clients[j].sock;
 					if (out_socket != server_socket && out_socket != _socket && out_socket != client_socket)
 					{
 						std::ostringstream msgOUT;
@@ -142,46 +155,67 @@ int main() {
 					closesocket(_socket);
 					FD_CLR(_socket, &master_sockets);
 				}
-				//else if (buf[0] == 's')
-				//{
-				//	std::cout << server_socket << std::endl;
-				//}
-				//else if (buf[0] == 'o')
-				//{
-				//	std::cout << out_socket << std::endl;
-				//}
-				//else if (buf[0] == 'o')
-				//{
-				//	std::cout << _socket << std::endl;
-				//}
+				else if (buf[0] == '/')
+				{
+					std::cout << "CommandRecognized\n";
+					std::string tmp = buf;
+					std::size_t pos = tmp.find(":");					//Find First Break
+					tmp = tmp.substr(1, pos - 1);
+					if (tmp == "join")
+					{
+						std::cout << "JoinRoomCalled\n";
+						tmp = buf;
+						tmp = tmp.substr(pos + 1);
+						for (int j = 0; j < clients.size(); j++)
+						{
+							if (_socket == clients[j].sock)
+							{
+								clients[j].room = std::stof(tmp, NULL);
+								std::cout << "Changed room of User: " << clients[j].sock << " to " << "room " << clients[j].room << "\n";
+							}
+						}
+					}
+					else if (tmp == "name")
+					{
+						std::cout << "NameChangeCalled\n";
+						tmp = buf;
+						tmp = tmp.substr(pos + 1);
+						for (int j = 0; j < clients.size(); j++)
+						{
+							if (_socket == clients[j].sock)
+							{
+								clients[j].name = tmp;
+								std::cout << "Changed name of User: " << clients[j].sock << " to " << "'" << clients[j].name << "'\n";
+							}
+						}
+
+					}
+				}
 				else
 				{
-					////Check to see if it is a command \quit kills the server
-					//if (buf[0] == '/')
-					//{
-					//	//Is the command quit?
-					//	std::string cmd = std::string(buf, bytesIn);
-					//	if (cmd == "/exit")
-					//	{
-					//		application_running = false;
-					//		break;
-					//	}
-					//
-					//	//unknown command
-					//	continue;
-					//}
-
-					//Send message to other clients, and definiately NOT the listening socket
-					for (int i = 0; i < master_sockets.fd_count; i++)
+					//Send to everyone in room
+					for (int j = 0; j < clients.size(); j++)
 					{
-						out_socket = master_sockets.fd_array[i];
-						if (out_socket != server_socket && out_socket != _socket)
+						if (clients[j].sock == _socket) //Check who is sending
 						{
-							std::ostringstream ss;
-							ss << "User " << _socket << ">> " << buf << "\r\n";
-							std::string strOut = ss.str();
-					
-							send(out_socket, strOut.c_str(), strOut.size() + 1, 0);
+							for (int k = 0; k < clients.size(); k++)
+							{
+								if (clients[k].sock != server_socket && clients[k].sock != _socket && clients[k].room == clients[j].room) //If not the client sending, check to see if in same room
+								{
+									std::string string_Out;
+									if (clients[j].name != "User")
+									{
+										string_Out = clients[j].name + ">> " + buf + "\r\n";;
+									}
+									else
+									{
+										std::ostringstream ss;
+										ss << "User: " << clients[j].sock << ">> " << buf << "\r\n";
+										string_Out = ss.str();
+									}
+									send(clients[k].sock, string_Out.c_str(), string_Out.size() + 1, 0);
+								}
+							}
 						}
 					}
 				}
