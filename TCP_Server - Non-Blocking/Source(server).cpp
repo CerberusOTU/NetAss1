@@ -29,6 +29,7 @@ std::vector<Client> clients;
 void DisplayOnline(SOCKET _sock)
 {
 	std::string string_Out;
+	string_Out = "";
 	for (int index = 0; index < clients.size(); index++)
 	{
 		if (clients[index].sock != _sock) {	
@@ -225,6 +226,8 @@ int main() {
 				}
 				else
 				{
+					int whatclient = 0;
+					std::string temp = buf;
 					//Send to everyone in room
 					for (int j = 0; j < clients.size(); j++)
 					{
@@ -248,7 +251,13 @@ int main() {
 									send(clients[k].sock, string_Out.c_str(), string_Out.size() + 1, 0);
 								}
 							}
+							whatclient = j;
 						}
+					}				
+					if (temp == ">>Disconnecting>>")
+					{
+						clients.erase(clients.begin() + whatclient);
+						std::cout << "Erasing\n";
 					}
 				}
 			}
