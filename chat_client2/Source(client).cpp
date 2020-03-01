@@ -32,10 +32,12 @@ void sending()
 			std::cout << "Change Name: \t/name:(Name)\n";
 			std::cout << "Display Lobby:\t /online:(Name)\n";
 			std::cout << "Disconnect: \t/exit\n";
-			break;
 		}
-		char* message = (char*)line.c_str();
-		send(cli_socket, message, strlen(message), 0);
+		else
+		{
+			char* message = (char*)line.c_str();
+			send(cli_socket, message, strlen(message), 0);
+		}
 	}
 }
 
